@@ -185,6 +185,97 @@ void view_treasure(const char *hunt_id, const char *treasure_id)
     log_action(hunt_id, log_entry);
 }
 
+void removeTreasure(const char *hunt_id, const char *treasure_id)
+{
+    char file_path[STRING_SIZE];
+    snprintf(file_path, sizeof(file_path), "%s/%s/%s", HUNT_FOLDER, hunt_id, TREASURE_DATA);
+
+    int fd = open(file_path, O_RDWR);
+    if (fd == -1)
+    {
+        perror("Error opening file");
+        return;
+    }
+
+    // file temporar
+    char temp_path[STRING_SIZE];
+    snprintf(temp_path, sizeof(temp_path), "%s/%s/temp.dat", HUNT_FOLDER, hunt_id);
+    int temp_fd = open(temp_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (temp_fd == -1)
+    {
+        perror("Error creating temp file");
+        close(fd);
+        return;
+    }
+
+    Treasure t;
+    int found = 0;
+    ssize_t bytes_read;
+
+    while ((bytes_read = read(fd, &t, sizeof(Treasure))) > 0)
+    {
+        if (strcmp(t.id, treasure_id) == 0)
+        {
+            found = 1;
+        }
+        else
+        {
+            write(temp_fd, &t, sizeof(Treasure));
+        }
+    }
+
+    close(fd);
+    close(temp_fd);
+
+    if (found)
+    {
+        remove(file_path);
+        rename(temp_path, file_path);
+
+        char action[STRING_SIZE];
+        snprintf(action, sizeof(action), "REMOVE %s", treasure_id);
+        log_action(hunt_id, action);
+        printf("Treasure %s removed\n", treasure_id);
+    }
+    else
+    {
+        remove(temp_path);
+        printf("Treasure not found\n");
+    }
+}
+
+void removeHunt(const char *hunt_id)
+{
+    char hunt_path[STRING_SIZE];
+    snprintf(hunt_path, sizeof(hunt_path), "%s/%s", HUNT_FOLDER, hunt_id);
+
+    char treasure_file[STRING_SIZE];
+    snprintf(treasure_file, sizeof(treasure_file), "%s/%s", hunt_path, TREASURE_DATA);
+
+    char log_file[STRING_SIZE];
+    snprintf(log_file, sizeof(log_file), "%s/%s", hunt_path, HUNT_LOG);
+
+    if (remove(treasure_file) == -1 && errno != ENOENT)
+    {
+        perror("Error");
+        return;
+    }
+
+    if (remove(log_file) == -1 && errno != ENOENT)
+    {
+        perror("Error");
+        return;
+    }
+
+    if (rmdir(hunt_path) == -1)
+    {
+        perror("Error");
+        return;
+    }
+
+    printf("Hunt '%s' removed\n", hunt_id);
+}
+
 void printUsage()
 {
     printf("Usage:\n");
@@ -218,14 +309,14 @@ int main(int argc, char *argv[])
     {
         view_treasure(hunt_id, argv[3]);
     }
-    // else if (strcmp(command, "--remove_treasure") == 0 && argc >= 4)
-    // {
-    //     remove_treasure(hunt_id, argv[3]);
-    // }
-    // else if (strcmp(command, "--remove_hunt") == 0)
-    // {
-    //     remove_hunt(hunt_id);
-    // }
+    else if (strcmp(command, "--remove_treasure") == 0 && argc >= 4)
+    {
+        removeTreasure(hunt_id, argv[3]);
+    }
+    else if (strcmp(command, "--remove_hunt") == 0)
+    {
+        removeHunt(hunt_id);
+    }
     else
     {
         fprintf(stderr, "Invalid command!\n");
