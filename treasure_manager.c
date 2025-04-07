@@ -46,19 +46,26 @@ int createHuntDirectory(char *hunt_id)
 
     return 0;
 }
-void log_action(const char *hunt_id, const char *action)
+
+void log_action(char *hunt_id, char *action)
 {
     char log_path[STRING_SIZE];
     snprintf(log_path, sizeof(log_path), "%s/%s/%s", HUNT_FOLDER, hunt_id, LOGGED_HUNT);
 
-    FILE *log = fopen(log_path, "a");
-    if (!log)
+    int fd = open(log_path, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (fd < 0)
     {
-        perror("Error");
+        fprintf(stderr, "ERROR: %s\n", strerror(errno));
         return;
     }
-    fprintf(log, "[%ld] %s\n", time(NULL), action);
-    fclose(log);
+
+    dprintf(fd, "[%ld],%s\n", time(NULL), action);
+    close(fd);
+
+    char symlink_name[STRING_SIZE];
+    snprintf(symlink_name, sizeof(symlink_name), "logged_hunt-%s", hunt_id);
+    unlink(symlink_name);
+    symlink(log_path, symlink_name);
 }
 
 void addTreasure(char *hunt_id)
@@ -255,6 +262,9 @@ void removeHunt(const char *hunt_id)
     char log_file[STRING_SIZE];
     snprintf(log_file, sizeof(log_file), "%s/%s", hunt_path, HUNT_LOG);
 
+    char logged_hunt_file[STRING_SIZE];
+    snprintf(logged_hunt_file, sizeof(logged_hunt_file), "%s/%s", hunt_path, LOGGED_HUNT);
+
     if (remove(treasure_file) == -1 && errno != ENOENT)
     {
         perror("Error");
@@ -262,6 +272,12 @@ void removeHunt(const char *hunt_id)
     }
 
     if (remove(log_file) == -1 && errno != ENOENT)
+    {
+        perror("Error");
+        return;
+    }
+
+    if (remove(logged_hunt_file) == -1 && errno != ENOENT)
     {
         perror("Error");
         return;
