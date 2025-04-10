@@ -9,9 +9,8 @@
 #include <time.h>
 
 #define STRING_SIZE 250
-#define LOGGED_HUNT "logged_hunt.txt"
+#define LOGGED_HUNT "logged_hunt.log"
 #define HUNT_FOLDER "hunts"
-#define HUNT_LOG "hunt.log"
 #define TREASURE_DATA "treasure.dat"
 
 typedef struct
@@ -260,7 +259,7 @@ void removeHunt(const char *hunt_id)
     snprintf(treasure_file, sizeof(treasure_file), "%s/%s", hunt_path, TREASURE_DATA);
 
     char log_file[STRING_SIZE];
-    snprintf(log_file, sizeof(log_file), "%s/%s", hunt_path, HUNT_LOG);
+    snprintf(log_file, sizeof(log_file), "%s/%s", hunt_path, LOGGED_HUNT);
 
     char logged_hunt_file[STRING_SIZE];
     snprintf(logged_hunt_file, sizeof(logged_hunt_file), "%s/%s", hunt_path, LOGGED_HUNT);
