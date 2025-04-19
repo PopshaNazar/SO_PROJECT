@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <time.h>
 
-#define STRING_SIZE 250
+#define STRING_SIZE 256
 #define LOGGED_HUNT "logged_hunt.log"
 #define HUNT_FOLDER "hunts"
 #define TREASURE_DATA "treasure.dat"
