@@ -4,9 +4,12 @@
 #include <signal.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/types.h>
 
 #define CMD_FILE "cmd.txt"
 #define BUFFER_SIZE 250
+
+volatile sig_atomic_t running = 1;
 
 int pipe_fds[2]; // 0 = read, 1 = write
 
@@ -18,8 +21,7 @@ void handle_sigusr1(int signum)
 
 void handle_sigusr2(int signum)
 {
-    char code = 'X'; // Exit
-    write(pipe_fds[1], &code, 1);
+    running = 0;
 }
 
 void process_command()
@@ -64,48 +66,30 @@ void process_command()
             system(cmdline);
         }
     }
-    else
-    {
-        printf("Monitor: comanda necunoscuta.\n");
-    }
 }
 
 int main()
 {
-    if (pipe(pipe_fds) == -1)
-    {
-        perror("Eroare la pipe");
-        exit(1);
-    }
+    pipe(pipe_fds);
 
-    struct sigaction sa1, sa2;
+    struct sigaction sa1 = {0}, sa2 = {0};
     sa1.sa_handler = handle_sigusr1;
-    sigemptyset(&sa1.sa_mask);
-    sa1.sa_flags = SA_RESTART;
-    sigaction(SIGUSR1, &sa1, NULL);
-
     sa2.sa_handler = handle_sigusr2;
-    sigemptyset(&sa2.sa_mask);
-    sa2.sa_flags = SA_RESTART;
+
+    sigaction(SIGUSR1, &sa1, NULL);
     sigaction(SIGUSR2, &sa2, NULL);
 
-    printf("Monitor: pornit.\n");
+    printf("Monitor pornit...\n");
 
-    char signal_code;
-    while (1)
+    while (running)
     {
-        if (read(pipe_fds[0], &signal_code, 1) > 0)
-        {
-            if (signal_code == 'C')
-            {
-                process_command();
-            }
-            else if (signal_code == 'X')
-            {
-                break;
-            }
-        }
+        pause();
+        char code;
+        read(pipe_fds[0], &code, 1);
+        if (code == 'C')
+            process_command();
     }
-    printf("Monitor: oprit.\n");
+
+    printf("Monitor inchis.\n");
     return 0;
 }
