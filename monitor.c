@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
-#define CMD_FILE "cmd.txt"
+#define CMD_FILE "monitor_cmd.txt"
 #define BUFFER_SIZE 250
 
 int pipe_fds[2]; // 0 = read, 1 = write
